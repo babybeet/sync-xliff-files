@@ -12,6 +12,7 @@ export class AppComponent {
   targetLanguageFile: File = null;
 
   syncSourceAndTargetXliffFiles() {
+    this.messages = [];
     Promise.all([this._readFile(this.sourceLanguageFile), this._readFile(this.targetLanguageFile)])
       .then(([sourceLanguageDocument, targetLanguageDocument]) => {
         const container = document.createElement('body');
@@ -20,7 +21,7 @@ export class AppComponent {
           .forEach(sourceUnit => {
             const transUnitId = sourceUnit.getAttribute('id');
             const targetUnit = targetLanguageDocument.querySelector(`#${transUnitId}`);
-            const resultedNode = sourceUnit.cloneNode(true) as HTMLElement;
+            const newTransUnitNode = sourceUnit.cloneNode(true) as HTMLElement;
             const sourceText = sourceUnit.querySelector('original').textContent;
             let missingTranslation = false;
 
@@ -28,19 +29,18 @@ export class AppComponent {
               const target = targetUnit.querySelector('target');
 
               if (target) {
-                resultedNode.querySelector('original').insertAdjacentElement('afterend', target);
+                newTransUnitNode.querySelector('original').insertAdjacentElement('afterend', target);
               } else {
                 missingTranslation = true;
                 this.messages.push(`No translation found for "${transUnitId.replace('_', '')}" ("${sourceText}").`);
               }
-              container.appendChild(resultedNode);
             } else {
               missingTranslation = true;
-              container.appendChild(resultedNode);
               this.messages.push(`No translation found for "${transUnitId.replace('_', '')}" ("${sourceText}").`);
             }
+            container.appendChild(newTransUnitNode);
             if (missingTranslation) {
-              this._addTodoCommentBeforeNode(resultedNode);
+              this._addTodoCommentBeforeNode(newTransUnitNode);
             }
           });
 
@@ -79,7 +79,13 @@ export class AppComponent {
   }
 
   private _parseXliffFileIntoDocument(fileContent: string) {
+    // <trans-unit>'s id can begin with a number,
+    // but that is not a valid selector in HTML,
+    // so we want to prepend an underscore to the id
     fileContent = fileContent.replace(/(<trans-unit\s+?id=")/gm, '$1_')
+      // DOMParser with 'text/html' will attemp to "fix" <source> nodes by moving its inner content
+      // outside because <source> is an HTML5 element, it's not allowed to have children.
+      // So we're doing replace's here to preserve the original contents in the XLIFF file
       .replace(/<(\/?)source>/gm, '<$1original>')
       .replace(/<x(\s+)/gm, '_x_$1');
     return new DOMParser().parseFromString(fileContent, 'text/html');
@@ -104,7 +110,6 @@ export class AppComponent {
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
-    document.body.appendChild(a);
     document.body.removeChild(a);
     URL.revokeObjectURL(downloadLink);
   }
