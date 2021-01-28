@@ -39,12 +39,18 @@
             {{targetLanguageFile?.name}}
         </span>
     </div>
+    <button mat-raised-button
+            color='accent'
+            (click)='clear(); sourceLanguageFilePickerForm.reset(); targetLanguageFilePickerForm.reset()'>
+        <mat-icon>clear</mat-icon>
+        <label>Clear</label>
+    </button>
 </div>
 <div class='sync-xliff-files__row'>
     <button mat-raised-button
             color='primary'
             [disabled]='sourceLanguageFile === null || targetLanguageFile === null'
-            (click)='syncSourceAndTargetXliffFiles(); sourceLanguageFilePickerForm.reset(); targetLanguageFilePickerForm.reset()'>
+            (click)='syncSourceAndTargetXliffFiles(); targetLanguageFilePickerForm.reset()'>
         <mat-icon>sync</mat-icon>
         <label>Sync</label>
     </button>

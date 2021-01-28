@@ -11,6 +11,12 @@ export class AppComponent {
   sourceLanguageFile: File = null;
   targetLanguageFile: File = null;
 
+  clear() {
+    this.sourceLanguageFile = null;
+    this.targetLanguageFile = null;
+    this.messages = [];
+  }
+
   syncSourceAndTargetXliffFiles() {
     this.messages = [];
     Promise.all([this._readFile(this.sourceLanguageFile), this._readFile(this.targetLanguageFile)])
@@ -21,26 +27,24 @@ export class AppComponent {
           .forEach(sourceUnit => {
             const transUnitId = sourceUnit.getAttribute('id');
             const targetUnit = targetLanguageDocument.querySelector(`#${transUnitId}`);
-            const newTransUnitNode = sourceUnit.cloneNode(true) as HTMLElement;
+            const newTransUnit = sourceUnit.cloneNode(true) as HTMLElement;
             const sourceText = sourceUnit.querySelector('original').textContent;
             let missingTranslation = false;
 
             if (targetUnit) {
               const target = targetUnit.querySelector('target');
-
               if (target) {
-                newTransUnitNode.querySelector('original').insertAdjacentElement('afterend', target);
+                newTransUnit.querySelector('original').insertAdjacentElement('afterend', target);
               } else {
                 missingTranslation = true;
-                this.messages.push(`No translation found for "${transUnitId.replace('_', '')}" ("${sourceText}").`);
               }
             } else {
               missingTranslation = true;
-              this.messages.push(`No translation found for "${transUnitId.replace('_', '')}" ("${sourceText}").`);
             }
-            container.appendChild(newTransUnitNode);
+            container.appendChild(newTransUnit);
             if (missingTranslation) {
-              this._addTodoCommentBeforeNode(newTransUnitNode);
+              this._addTodoCommentBeforeNode(newTransUnit);
+              this.messages.push(`No translation found for "${transUnitId.replace('_', '')}" ("${sourceText}").`);
             }
           });
 
@@ -63,7 +67,6 @@ export class AppComponent {
           |</xliff>
         `);
         this._download(syncedDocument, this.targetLanguageFile.name);
-        this.sourceLanguageFile = null;
         this.targetLanguageFile = null;
       });
   }
